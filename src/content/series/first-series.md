@@ -1,6 +1,6 @@
 ---
-id: first-series
-title: "First Series"
-description: "This is my first series on this blog. This is my first series on this blog. This is my first series on this blog. This is my first series on this blog. This is my first series on this blog. This is my first series on this blog"
+id: elixir-huffman
+title: "Compressing Text Files With Elixir"
+description: "Learn a simple algorithim to compress an input text file."
 featured: true
 ---
