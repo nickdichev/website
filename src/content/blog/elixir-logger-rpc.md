@@ -10,9 +10,9 @@ tags:
 
 ## Intro
 
-What do Elixir's `Logger`, mix releases, and Erlang distribution have in common? More than is immediately obvious when you look at these concepts individually. However, when you start to peel away the surface you will discover some really elegant solutions which are unique to the Elixir runtime.
+What do Elixir's `Logger`, mix releases, and Erlang distribution have in common? More than is immediately obvious at first glance.
 
-Imagine that you just received a request to standardize the logging format of an Elixir microservice you are the owner of. "Easy enough" you say to yourself, "we're using Elixir 1.16 so we have the [changes in 1.15](https://github.com/elixir-lang/elixir/blob/v1.15.0/CHANGELOG.md#integration-with-erlangotp-logger)" which unified the Elixir and Erlang loggers. So, we can easily standardize to the agreed upon logging format by setting the `:default_formattter` config of the `:logger` application.
+Imagine that you just received a request to standardize the logging format of an Elixir microservice you are the owner of. "Easy enough" you say to yourself, "we can apply custom formatting on all log messages by [configuring the default handler on Logger](https://hexdocs.pm/logger/1.17.3/Logger.html#module-boot-configuration).
 
 You add the config for the formatting:
 
@@ -21,7 +21,7 @@ config :logger, :default_formatter,
   ...
 ```
 
-You even add a test that the formatting works:
+You add a test that the formatting works:
 
 ```elixir
 deftest "..." do
@@ -36,48 +36,39 @@ correct format log
 wrong format log
 ```
 
-Looks goo...wait how is that possible? Why didn't our application format some of the logs? We configured the "default formatter", why isn't that format applying to all of the logs?
+Looks goo...wait how is that possible? We configured the "default formatter"! Why wouldn't that format all of the logs?
 
-## Taking a step back
+## Let's Build a Release
 
-Let's take a step back and describe some interesting properties of the system under question. 
-
-The system is a backend live streaming service which re-encodes the stream in realtime. Video encoding is resource intensive so in order to run multiple streams at the same time we need to ensure that the system has the ability to quickly scale out. It would be nice if we could avoid adding complicated infrastructure resource scheduling logic to our application code.
-
-Additionally, some of the streams can be hours long. We can't end an ongoing live stream because we need to deploy a new version of the application. It would be nice if we could avoid adding complicated draining logic to our application code.
-
-## FLAME and you
-
-With these constraints in mind, we implemented a lambda architecture. Each live stream executes as a [Kuberenetes jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/). This is nice because we let the Kubernetes scheduler figure out what server has the capacity to run the stream. Additionally, we don't have to worry about draining since each stream runs independently. 
-
-If you have been following the recent work from Chris McCord and the team at [fly.io](https:///fly.io) you might notice this sounds similar to what the [FLAME](https://github.com/phoenixframework/flame) project does. However, the FLAME project wasn't released when we started developing, we sort of stumbled into a similar solution.
-
-A super powerful "feature" of FLAME is that it requires the "coordinator" and "job" runtimes to be connected in a cluster with Erlang distribution. This is really good because you can pass arbitrary Erlang terms across them, for example, the arguments to the application's `LiveStream.run(...)` function call. However, our implementation does not require the runtimes to be clustered. Instead, we serialize the `LiveStream.run(...)` command to a string and pass it as an argument to the `rpc` command of our application's release.
-
-Consider the typical Dockerfile you would use to run a Phoenix application. It probably ends with the following `CMD`:
-
-```dockerfile
-CMD my_app/bin/my_app start
-```
-
-Which is great, when the pod starts the release will be started and start serving web requests. However, our entrypoint to the Kubernetes job is a manifest file which we apply with aKubernetes API call. So, our app basically does:
-
-```dockerfile
-CMD sh -c "my_app/bin/my_app start; my_app/bin/my_app rpc LiveStream.run(...)"
-```
-
-Note that start is blocking. So we actually background it, spin in a loop until the app starts, then execte the rpc.
-
-## So What
-
-How could the use of rpc to run our command cause some of the logs to be unformatted? Let's take a look at what `mix release` spits out for us to interact with the compiled release:
+Elixir applications are typically built for production with [Mix releases](https://hexdocs.pm/mix/Mix.Tasks.Release.html#module-why-releases). When a release is built, the toolchain creates a shell script which wraps commands to start and interact with the BEAM:
 
 ```sh
-~> cat my_app/bin/my_app
+mix release
+Compiling 1 file (.ex)
+
+Release created at _build/dev/rel/logging
+
+    # To start your system
+    _build/dev/rel/logging/bin/logging start
+
+Once the release is running:
+
+    # To connect to it remotely
+    _build/dev/rel/logging/bin/logging remote
+
+    # To stop it gracefully (you may also send SIGINT/SIGTERM)
+    _build/dev/rel/logging/bin/logging stop
+
+To list all commands:
+
+    _build/dev/rel/logging/bin/logging
+```
+
+The output tells us know what commands we can use to start, stop, and connect to a release. How are those commands actually implemented? Let's take a look inside the script, which I've shortened for brevity.
+
+```sh
 #!/bin/sh
 set -e
-
-...
 
 rpc () {
   exec "$REL_VSN_DIR/elixir" \
@@ -103,14 +94,10 @@ start () {
        --vm-args "$RELEASE_VM_ARGS" "$@"
 }
 
-...
-
 case $1 in
   start)
     start "elixir" --no-halt
     ;;
-
-...
 
   remote)
     exec "$REL_VSN_DIR/iex" \
@@ -129,19 +116,18 @@ case $1 in
     fi
     rpc "$2"
     ;;
-...
+esac
 ```
 
-So when we call `my_app/bin/my_app start` the wrapping shell script will start the compiled release's runtime and start the application. Notice that the `remote` and `rpc` look very similar to `start`, however, they add an extra flag: `--hidden`.
+At first glance, it appears as if the commands to start the release, open a remote shell, or execute an RPC call into the running system are all very similar. However, notice that in both the implementations of the `remote` and `rpc` the `--hidden` flag is included in the arguments which are eventually passed to the BEAM startup.
 
 From the Erlang documentation:
 
-
 > A hidden node is a node started with the command-line flag -hidden. Connections between hidden nodes and other nodes are not transitive, they must be set up explicitly. Also, hidden nodes does not show up in the list of nodes returned by nodes/0. Instead, nodes(hidden) or nodes(connected) must be used. This means, for example, that the hidden node is not added to the set of nodes that global is keeping track of.
 
-This is pretty interesting! When we `remote` into a running release our shell is actually running in a new Erlang node connected to the primary node, however, the primary node can't see the remote node. Okay great, but what does this have to do with the log formatting?
+This is pretty interesting! When we `remote` into a running release our shell is actually running in a new Erlang node connected to the primary node. However, the primary node can't see the remote node (by default, we can access it with a flag passed on `Node.list/1`.
 
-Well, if we check the output of `:logger.get_handler_config(:default)` we can see there is a filter applied to logs coming from remote nodes:
+Okay great, but what does this have to do with the log formatting? Well, if we check the output of `:logger.get_handler_config(:default)` we can see there is a filter applied to logs coming from remote nodes:
 
 ```
 iex(5)> :logger.get_handler_config(:default) |> then(fn {:ok, handler} -> handler.filters end)
