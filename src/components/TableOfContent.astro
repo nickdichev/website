@@ -22,10 +22,10 @@ function buildToc(headings: Heading[]): TableOfContent[] {
     const heading = { ...h, subheadings: new Array<TableOfContent>() };
     parentHeadings.set(heading.depth, heading);
 
-    if (heading.depth === 2) {
+    if (heading.depth <= 2) {
       toc.push(heading);
     } else {
-      parentHeadings.get(heading.depth - 1).subheadings.push(heading);
+      parentHeadings.get(heading.depth - 1)?.subheadings.push(heading);
     }
   });
 
