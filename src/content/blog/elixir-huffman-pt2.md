@@ -1,7 +1,7 @@
 ---
 title: "Compressing Text Files With Elixir (Part 2)"
 description: "Apply huffman coding to an input file."
-featured: true
+featured: false
 seriesId: elixir-huffman
 orderInSeries: 2
 pubDate: "May 11 2019"

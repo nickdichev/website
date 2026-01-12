@@ -1,7 +1,7 @@
 ---
 title: "Compressing Text Files With Elixir (Part 3)"
 description: "Recover the original input from the compressed data."
-featured: true
+featured: false
 seriesId: elixir-huffman
 orderInSeries: 3
 pubDate: "May 17 2019"

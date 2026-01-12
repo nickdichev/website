@@ -1,7 +1,7 @@
 ---
 title: "Compressing Text Files With Elixir (Part 1)"
 description: "Create a compressed encoding of input text."
-featured: true
+featured: false
 seriesId: elixir-huffman
 orderInSeries: 1
 pubDate: "May 05 2019"

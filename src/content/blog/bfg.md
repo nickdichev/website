@@ -1,7 +1,7 @@
 ---
 title: "Cleaning git repositories with BFG"
 description: "How we reduced the size of our repo by 95%"
-featured: true
+featured: false
 pubDate: "Dec 09 2018"
 tags:
   - git
