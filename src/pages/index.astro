@@ -24,9 +24,9 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
 <BaseLayout>
   <div class="space-y-10">
     <div class="space-y-4">
-      <h1 class="text-4xl text-black dark:text-white font-black">
+      <h1 class="text-4xl text-text-heading font-black">
         Hello there! <span
-          class="underline underline-offset-2 decoration-fuchsia-600 dark:decoration-fuchsia-400"
+          class="underline underline-offset-2 decoration-brand"
           >I'm Nick</span
         >
       </h1>
@@ -37,7 +37,7 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
         <a
           href={TWITTER_HANDLE}
           target="_blank"
-          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-slate-300 hover:bg-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700"
+          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-surface hover:bg-surface-hover"
         >
           <MdiTwitter />
           <span>Twitter</span>
@@ -45,7 +45,7 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
         <a
           href={GITHUB_HANDLE}
           target="_blank"
-          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-slate-300 hover:bg-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700"
+          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-surface hover:bg-surface-hover"
         >
           <MdiGithub />
           <span>GitHub</span>
@@ -53,7 +53,7 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
         <a
           href="/rss.xml"
           target="_blank"
-          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-slate-300 hover:bg-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700"
+          class="inline-flex items-center justify-center space-x-2 py-2 px-3 rounded-md bg-surface hover:bg-surface-hover"
         >
           <MdiRss />
           <span>RSS</span>
@@ -63,17 +63,17 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
     {
       featuredPosts.length > 0 && (
         <div class="space-y-5">
-          <h1 class="text-3xl text-black dark:text-white">Featured Posts</h1>
+          <h1 class="text-3xl text-text-heading">Featured Posts</h1>
           <PostsList posts={featuredPosts} />
         </div>
       )
     }
     <div class="space-y-5">
       <div class="flex items-center justify-between space-x-2">
-        <h1 class="text-3xl text-black dark:text-white">Latest Posts</h1>
+        <h1 class="text-3xl text-text-heading">Latest Posts</h1>
         <a
           href="/blog"
-          class="inline-flex items-center justify-center py-0.5 px-3 bg-blue-600 hover:bg-blue-800 rounded-full text-sm text-white"
+          class="inline-flex items-center justify-center py-0.5 px-3 bg-accent hover:bg-accent-hover rounded-full text-sm text-text-inverse"
           >View all</a
         >
       </div>
@@ -83,10 +83,10 @@ const featuredSeries = (await getCollection("series")).filter((s) => s.data.feat
       featuredSeries.length > 0 && (
         <div class="space-y-5">
           <div class="flex items-center justify-between space-x-2">
-            <h1 class="text-3xl text-black dark:text-white">Featured Series</h1>
+            <h1 class="text-3xl text-text-heading">Featured Series</h1>
             <a
               href="/series"
-              class="inline-flex items-center justify-center py-0.5 px-3 bg-blue-600 hover:bg-blue-800 rounded-full text-sm text-white"
+              class="inline-flex items-center justify-center py-0.5 px-3 bg-accent hover:bg-accent-hover rounded-full text-sm text-text-inverse"
             >
               View all
             </a>
