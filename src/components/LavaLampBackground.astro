@@ -1,0 +1,435 @@
+---
+/**
+ * Lava Lamp Background Effect
+ *
+ * Creates a subtle animated background with morphing gradient blobs.
+ * - Uses SVG filter for the "goo" merge effect
+ * - Respects prefers-reduced-motion
+ * - Provides noscript fallback
+ * - Mouse interaction pushes blobs gently
+ */
+---
+
+<!-- SVG Filter Definition (hidden) -->
+<svg class="hidden" aria-hidden="true">
+  <defs>
+    <filter id="goo-filter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="40" result="blur" />
+      <feColorMatrix
+        in="blur"
+        mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+        result="goo"
+      />
+    </filter>
+  </defs>
+</svg>
+
+<!-- Animated Background Container -->
+<div class="lava-lamp-container" aria-hidden="true" data-lava-lamp>
+  <div class="lava-lamp-wrapper">
+    <!-- Each blob has a mouse-offset wrapper and an animated inner -->
+    <div class="blob-mouse-layer" data-blob-mouse>
+      <div class="blob blob-1"></div>
+    </div>
+    <div class="blob-mouse-layer" data-blob-mouse>
+      <div class="blob blob-2"></div>
+    </div>
+    <div class="blob-mouse-layer" data-blob-mouse>
+      <div class="blob blob-3"></div>
+    </div>
+    <div class="blob-mouse-layer" data-blob-mouse>
+      <div class="blob blob-4"></div>
+    </div>
+    <div class="blob-mouse-layer" data-blob-mouse>
+      <div class="blob blob-5"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Static fallback for noscript -->
+<noscript>
+  <div class="lava-lamp-static" aria-hidden="true"></div>
+</noscript>
+
+<style>
+  .lava-lamp-container {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: rgb(var(--color-background));
+  }
+
+  .lava-lamp-wrapper {
+    position: absolute;
+    inset: -200px;
+    filter: url(#goo-filter);
+  }
+
+  /* Mouse layer handles cursor interaction transform */
+  .blob-mouse-layer {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.25;
+    will-change: transform;
+  }
+
+  /* Blob colors using the warm palette */
+  .blob-1 {
+    width: 45vmax;
+    height: 45vmax;
+    top: -10%;
+    left: -10%;
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgb(var(--color-primary-light)) 0%,
+      rgb(var(--color-primary-light) / 0.5) 50%,
+      transparent 70%
+    );
+    animation: float-1 25s ease-in-out infinite;
+  }
+
+  .blob-2 {
+    width: 35vmax;
+    height: 35vmax;
+    top: 50%;
+    right: -5%;
+    background: radial-gradient(
+      circle at 70% 30%,
+      rgb(var(--color-secondary-light)) 0%,
+      rgb(var(--color-secondary-light) / 0.5) 50%,
+      transparent 70%
+    );
+    animation: float-2 30s ease-in-out infinite;
+  }
+
+  .blob-3 {
+    width: 30vmax;
+    height: 30vmax;
+    bottom: -5%;
+    left: 30%;
+    background: radial-gradient(
+      circle at 50% 70%,
+      rgb(var(--color-accent-light)) 0%,
+      rgb(var(--color-accent-light) / 0.5) 50%,
+      transparent 70%
+    );
+    animation: float-3 20s ease-in-out infinite;
+  }
+
+  .blob-4 {
+    width: 25vmax;
+    height: 25vmax;
+    top: 20%;
+    left: 50%;
+    background: radial-gradient(
+      circle at 40% 40%,
+      rgb(var(--color-primary-dark)) 0%,
+      rgb(var(--color-primary-dark) / 0.4) 50%,
+      transparent 70%
+    );
+    animation: float-4 22s ease-in-out infinite;
+  }
+
+  .blob-5 {
+    width: 20vmax;
+    height: 20vmax;
+    bottom: 20%;
+    left: 10%;
+    background: radial-gradient(
+      circle at 60% 60%,
+      rgb(var(--color-secondary-dark)) 0%,
+      rgb(var(--color-secondary-dark) / 0.4) 50%,
+      transparent 70%
+    );
+    animation: float-5 28s ease-in-out infinite;
+  }
+
+  /* Dark mode adjustments */
+  :global(.dark) .blob {
+    opacity: 0.18;
+  }
+
+  :global(.dark) .blob-1 {
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgb(var(--color-primary-dark)) 0%,
+      rgb(var(--color-primary-dark) / 0.5) 50%,
+      transparent 70%
+    );
+  }
+
+  :global(.dark) .blob-2 {
+    background: radial-gradient(
+      circle at 70% 30%,
+      rgb(var(--color-secondary-dark)) 0%,
+      rgb(var(--color-secondary-dark) / 0.5) 50%,
+      transparent 70%
+    );
+  }
+
+  :global(.dark) .blob-3 {
+    background: radial-gradient(
+      circle at 50% 70%,
+      rgb(var(--color-accent-dark)) 0%,
+      rgb(var(--color-accent-dark) / 0.5) 50%,
+      transparent 70%
+    );
+  }
+
+  :global(.dark) .blob-4 {
+    background: radial-gradient(
+      circle at 40% 40%,
+      rgb(var(--color-primary-light)) 0%,
+      rgb(var(--color-primary-light) / 0.4) 50%,
+      transparent 70%
+    );
+  }
+
+  :global(.dark) .blob-5 {
+    background: radial-gradient(
+      circle at 60% 60%,
+      rgb(var(--color-secondary-light)) 0%,
+      rgb(var(--color-secondary-light) / 0.4) 50%,
+      transparent 70%
+    );
+  }
+
+  /* Keyframe animations - slow, organic movements */
+  @keyframes float-1 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(10%, 15%) scale(1.05);
+    }
+    50% {
+      transform: translate(5%, 25%) scale(0.95);
+    }
+    75% {
+      transform: translate(-5%, 10%) scale(1.02);
+    }
+  }
+
+  @keyframes float-2 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(-15%, -10%) scale(1.08);
+    }
+    66% {
+      transform: translate(-10%, 15%) scale(0.92);
+    }
+  }
+
+  @keyframes float-3 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    20% {
+      transform: translate(15%, -20%) scale(1.1);
+    }
+    40% {
+      transform: translate(25%, -10%) scale(0.9);
+    }
+    60% {
+      transform: translate(10%, -25%) scale(1.05);
+    }
+    80% {
+      transform: translate(-5%, -15%) scale(0.95);
+    }
+  }
+
+  @keyframes float-4 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(-20%, 20%) scale(1.15);
+    }
+  }
+
+  @keyframes float-5 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20%, -10%) scale(0.9);
+    }
+    50% {
+      transform: translate(15%, 15%) scale(1.1);
+    }
+    75% {
+      transform: translate(-10%, 5%) scale(0.95);
+    }
+  }
+
+  /* Reduced motion: stop animations but keep visual */
+  @media (prefers-reduced-motion: reduce) {
+    .blob {
+      animation: none !important;
+    }
+    .blob-mouse-layer {
+      transition: none !important;
+    }
+  }
+
+  /* Static fallback for noscript */
+  .lava-lamp-static {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(
+        ellipse 50% 50% at 20% 20%,
+        rgb(var(--color-primary-light) / 0.2) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 40% 40% at 80% 60%,
+        rgb(var(--color-secondary-light) / 0.2) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 35% 35% at 50% 90%,
+        rgb(var(--color-accent-light) / 0.15) 0%,
+        transparent 50%
+      );
+  }
+
+  :global(.dark) .lava-lamp-static {
+    background:
+      radial-gradient(
+        ellipse 50% 50% at 20% 20%,
+        rgb(var(--color-primary-dark) / 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 40% 40% at 80% 60%,
+        rgb(var(--color-secondary-dark) / 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 35% 35% at 50% 90%,
+        rgb(var(--color-accent-dark) / 0.12) 0%,
+        transparent 50%
+      );
+  }
+</style>
+
+<script>
+  // Mouse interaction for lava lamp blobs
+  function initLavaLamp() {
+    // Respect reduced motion preference
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (prefersReducedMotion) return;
+
+    const container = document.querySelector("[data-lava-lamp]");
+    if (!container) return;
+
+    const mouseLayers = container.querySelectorAll("[data-blob-mouse]");
+    if (mouseLayers.length === 0) return;
+
+    // Different influence strengths for each layer (creates depth)
+    const influences = [0.03, 0.025, 0.035, 0.02, 0.028];
+
+    // Store layer data
+    const layerData = Array.from(mouseLayers).map((layer, i) => ({
+      element: layer as HTMLElement,
+      influence: influences[i] || 0.025,
+      currentX: 0,
+      currentY: 0,
+    }));
+
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let rafId: number | null = null;
+
+    // Throttled mouse tracking
+    let lastMouseUpdate = 0;
+    const mouseThrottle = 16; // ~60fps
+
+    function handleMouseMove(e: MouseEvent) {
+      const now = Date.now();
+      if (now - lastMouseUpdate < mouseThrottle) return;
+      lastMouseUpdate = now;
+
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    }
+
+    // Animation loop for smooth movement
+    function animate() {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      // Calculate mouse offset from center (normalized -1 to 1)
+      const normalizedX = (mouseX - centerX) / centerX;
+      const normalizedY = (mouseY - centerY) / centerY;
+
+      layerData.forEach((data) => {
+        // Calculate target offset (cursor pushes blobs away)
+        const targetX = -normalizedX * data.influence * 100;
+        const targetY = -normalizedY * data.influence * 100;
+
+        // Smooth interpolation (easing)
+        data.currentX += (targetX - data.currentX) * 0.03;
+        data.currentY += (targetY - data.currentY) * 0.03;
+
+        // Apply transform to the mouse layer
+        data.element.style.transform = `translate(${data.currentX}vmax, ${data.currentY}vmax)`;
+      });
+
+      rafId = requestAnimationFrame(animate);
+    }
+
+    // Start listening and animating
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    rafId = requestAnimationFrame(animate);
+
+    // Cleanup function
+    function cleanup() {
+      document.removeEventListener("mousemove", handleMouseMove);
+      if (rafId) cancelAnimationFrame(rafId);
+    }
+
+    // Cleanup on page navigation (for Astro view transitions)
+    document.addEventListener("astro:before-preparation", cleanup, {
+      once: true,
+    });
+
+    // Listen for reduced motion preference changes
+    window
+      .matchMedia("(prefers-reduced-motion: reduce)")
+      .addEventListener("change", (e) => {
+        if (e.matches) {
+          cleanup();
+          // Reset transforms
+          layerData.forEach((data) => {
+            data.element.style.transform = "";
+          });
+        }
+      });
+  }
+
+  // Initialize on load and on Astro page transitions
+  initLavaLamp();
+  document.addEventListener("astro:after-swap", initLavaLamp);
+</script>
