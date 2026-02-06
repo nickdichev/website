@@ -331,105 +331,120 @@
   }
 </style>
 
-<script>
-  // Mouse interaction for lava lamp blobs
-  function initLavaLamp() {
+<script is:inline>
+  // Mouse interaction for lava lamp blobs - "push away" effect
+  (function initLavaLamp() {
     // Respect reduced motion preference
-    const prefersReducedMotion = window.matchMedia(
+    var prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
     if (prefersReducedMotion) return;
 
-    const container = document.querySelector("[data-lava-lamp]");
+    var container = document.querySelector("[data-lava-lamp]");
     if (!container) return;
 
-    const mouseLayers = container.querySelectorAll("[data-blob-mouse]");
+    var mouseLayers = container.querySelectorAll("[data-blob-mouse]");
     if (mouseLayers.length === 0) return;
 
-    // Different influence strengths for each layer (creates depth)
-    const influences = [0.03, 0.025, 0.035, 0.02, 0.028];
+    // Configuration
+    var pushRadius = 512; // How close cursor needs to be to push (pixels)
+    var pushStrength = 64; // Max push distance (pixels)
+    var easingSpeed = 0.05; // How fast blobs return (0-1, lower = smoother)
+
+    // Approximate blob center positions (percentage of viewport)
+    // These match the CSS positioning of each blob
+    var blobPositions = [
+      { x: 0.15, y: 0.15 },  // blob-1: top-left
+      { x: 0.85, y: 0.55 },  // blob-2: right side
+      { x: 0.45, y: 0.85 },  // blob-3: bottom center
+      { x: 0.55, y: 0.30 },  // blob-4: upper center
+      { x: 0.20, y: 0.70 },  // blob-5: bottom-left
+    ];
 
     // Store layer data
-    const layerData = Array.from(mouseLayers).map((layer, i) => ({
-      element: layer as HTMLElement,
-      influence: influences[i] || 0.025,
-      currentX: 0,
-      currentY: 0,
-    }));
+    var layerData = [];
+    for (var i = 0; i < mouseLayers.length; i++) {
+      layerData.push({
+        element: mouseLayers[i],
+        baseX: blobPositions[i] ? blobPositions[i].x : 0.5,
+        baseY: blobPositions[i] ? blobPositions[i].y : 0.5,
+        currentX: 0,
+        currentY: 0,
+        targetX: 0,
+        targetY: 0,
+      });
+    }
 
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-    let rafId: number | null = null;
+    var mouseX = -1000;
+    var mouseY = -1000;
+    var rafId = null;
 
-    // Throttled mouse tracking
-    let lastMouseUpdate = 0;
-    const mouseThrottle = 16; // ~60fps
-
-    function handleMouseMove(e: MouseEvent) {
-      const now = Date.now();
-      if (now - lastMouseUpdate < mouseThrottle) return;
-      lastMouseUpdate = now;
-
+    function handleMouseMove(e) {
       mouseX = e.clientX;
       mouseY = e.clientY;
     }
 
-    // Animation loop for smooth movement
+    function handleMouseLeave() {
+      mouseX = -1000;
+      mouseY = -1000;
+    }
+
+    // Animation loop
     function animate() {
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
 
-      // Calculate mouse offset from center (normalized -1 to 1)
-      const normalizedX = (mouseX - centerX) / centerX;
-      const normalizedY = (mouseY - centerY) / centerY;
+      for (var i = 0; i < layerData.length; i++) {
+        var data = layerData[i];
 
-      layerData.forEach((data) => {
-        // Calculate target offset (cursor pushes blobs away)
-        const targetX = -normalizedX * data.influence * 100;
-        const targetY = -normalizedY * data.influence * 100;
+        // Calculate blob's approximate center in pixels
+        var blobCenterX = data.baseX * vw;
+        var blobCenterY = data.baseY * vh;
 
-        // Smooth interpolation (easing)
-        data.currentX += (targetX - data.currentX) * 0.03;
-        data.currentY += (targetY - data.currentY) * 0.03;
+        // Calculate distance from cursor to blob center
+        var dx = blobCenterX - mouseX;
+        var dy = blobCenterY - mouseY;
+        var distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Apply transform to the mouse layer
-        data.element.style.transform = `translate(${data.currentX}vmax, ${data.currentY}vmax)`;
-      });
+        // Calculate pull if within radius
+        if (distance < pushRadius && distance > 0) {
+          // Normalize direction (negative = pull toward cursor)
+          var nx = -dx / distance;
+          var ny = -dy / distance;
+
+          // Pull strength falls off with distance (stronger when closer)
+          var force = (1 - distance / pushRadius) * pushStrength;
+
+          data.targetX = nx * force;
+          data.targetY = ny * force;
+        } else {
+          // Return to original position
+          data.targetX = 0;
+          data.targetY = 0;
+        }
+
+        // Smooth interpolation toward target
+        data.currentX += (data.targetX - data.currentX) * easingSpeed;
+        data.currentY += (data.targetY - data.currentY) * easingSpeed;
+
+        // Apply transform to the wrapper layer
+        data.element.style.transform = "translate(" + data.currentX + "px, " + data.currentY + "px)";
+      }
 
       rafId = requestAnimationFrame(animate);
     }
 
     // Start listening and animating
     document.addEventListener("mousemove", handleMouseMove, { passive: true });
+    document.addEventListener("mouseleave", handleMouseLeave);
     rafId = requestAnimationFrame(animate);
 
-    // Cleanup function
-    function cleanup() {
-      document.removeEventListener("mousemove", handleMouseMove);
-      if (rafId) cancelAnimationFrame(rafId);
-    }
-
     // Cleanup on page navigation (for Astro view transitions)
-    document.addEventListener("astro:before-preparation", cleanup, {
-      once: true,
-    });
-
-    // Listen for reduced motion preference changes
-    window
-      .matchMedia("(prefers-reduced-motion: reduce)")
-      .addEventListener("change", (e) => {
-        if (e.matches) {
-          cleanup();
-          // Reset transforms
-          layerData.forEach((data) => {
-            data.element.style.transform = "";
-          });
-        }
-      });
-  }
-
-  // Initialize on load and on Astro page transitions
-  initLavaLamp();
-  document.addEventListener("astro:after-swap", initLavaLamp);
+    document.addEventListener("astro:before-preparation", function cleanup() {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      if (rafId) cancelAnimationFrame(rafId);
+    }, { once: true });
+  })();
 </script>
