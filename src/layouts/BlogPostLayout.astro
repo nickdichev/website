@@ -82,7 +82,7 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
         <div class="not-prose my-10">
           {series && <SeriesCard series={series} order={orderInSeries} />}
         </div>
-        <article>
+        <article class="article-with-asides">
           <slot />
         </article>
       </div>
@@ -158,4 +158,159 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
       button.innerText = "Copy";
     }, 750);
   }
+</script>
+
+<script>
+  // Transform code comment patterns like "# (nix-enable)" into clickable markers.
+  // Done client-side because rehype plugin can't reliably modify rehype-pretty-code output.
+  function transformCodeMarkers() {
+    let markerCount = 0;
+    const codeBlocks = document.querySelectorAll("figure[data-rehype-pretty-code-figure] code");
+
+    codeBlocks.forEach((code) => {
+      // Walk every line span
+      const lines = code.querySelectorAll("span[data-line]");
+      lines.forEach((line) => {
+        const text = line.textContent || "";
+        const match = text.match(/(#|\/\/)\s*\(([a-zA-Z0-9_-]+)\)\s*$/);
+        if (!match) return;
+
+        markerCount++;
+        const asideId = match[2];
+        const pattern = match[0];
+
+        // Walk the leaf text nodes to find and remove the pattern
+        const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+        const textNodes: Text[] = [];
+        let node: Text | null;
+        while ((node = walker.nextNode() as Text)) textNodes.push(node);
+
+        // Build a map of cumulative positions
+        let cumulative = 0;
+        const positions = textNodes.map((tn) => {
+          const start = cumulative;
+          cumulative += tn.length;
+          return { node: tn, start, end: cumulative };
+        });
+
+        const patternStart = text.lastIndexOf(pattern);
+        const patternEnd = patternStart + pattern.length;
+
+        // Remove or trim text nodes that overlap with the pattern
+        for (const { node: tn, start, end } of positions) {
+          if (start >= patternStart) {
+            // Entirely within pattern — remove
+            tn.textContent = "";
+          } else if (end > patternStart) {
+            // Straddles boundary — trim
+            tn.textContent = tn.textContent!.slice(0, patternStart - start);
+          }
+        }
+
+        // Append the clickable marker span
+        const marker = document.createElement("span");
+        marker.className = "code-aside-marker";
+        marker.dataset.asideTarget = asideId;
+        marker.setAttribute("role", "button");
+        marker.setAttribute("tabindex", "0");
+        marker.setAttribute("aria-label", "Go to sidenote");
+        marker.textContent = `(${markerCount})`;
+        line.appendChild(marker);
+      });
+    });
+  }
+
+  function positionAsides() {
+    const article = document.querySelector(".article-with-asides");
+    if (!article) return;
+
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (!isDesktop) return;
+
+    const asides = article.querySelectorAll(".aside-container");
+    const articleRect = article.getBoundingClientRect();
+    const GAP = 12; // min px gap between stacked asides
+    let lastBottom = 0;
+
+    asides.forEach((aside) => {
+      const content = aside.querySelector("[data-aside-content]") as HTMLElement;
+      if (!content) return;
+
+      const asideId = aside.getAttribute("data-aside-id");
+      let referenceElement: Element | null = null;
+
+      if (asideId) {
+        referenceElement = document.querySelector(
+          `.code-aside-marker[data-aside-target="${asideId}"]`
+        );
+      } else {
+        referenceElement = aside.querySelector(".aside-marker-wrapper");
+      }
+
+      if (!referenceElement) return;
+
+      const refRect = referenceElement.getBoundingClientRect();
+      // Subtract padding so the aside text aligns with the marker
+      let top = refRect.top - articleRect.top + article.scrollTop - 8;
+
+      // Prevent overlap: push down if this would overlap the previous aside
+      if (top < lastBottom + GAP) {
+        top = lastBottom + GAP;
+      }
+
+      content.style.top = `${top}px`;
+
+      // Track bottom edge for next aside
+      lastBottom = top + content.offsetHeight;
+    });
+  }
+
+  function handleCodeMarkerClicks() {
+    const codeMarkers = document.querySelectorAll(".code-aside-marker");
+
+    codeMarkers.forEach((marker) => {
+      const handler = () => {
+        const targetId = (marker as HTMLElement).dataset.asideTarget;
+        if (!targetId) return;
+
+        const targetAside = document.querySelector(
+          `[data-aside-id="${targetId}"]`
+        );
+        if (!targetAside) return;
+
+        const content = targetAside.querySelector("[data-aside-content]") as HTMLElement;
+        if (!content) return;
+
+        targetAside.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        content.classList.add("aside-highlighted");
+        setTimeout(() => {
+          content.classList.remove("aside-highlighted");
+        }, 1500);
+      };
+
+      marker.addEventListener("click", handler);
+      marker.addEventListener("keydown", (e: Event) => {
+        if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") {
+          e.preventDefault();
+          handler();
+        }
+      });
+    });
+  }
+
+  function initAsides() {
+    transformCodeMarkers();
+    positionAsides();
+    handleCodeMarkerClicks();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAsides);
+  } else {
+    initAsides();
+  }
+
+  window.addEventListener("resize", positionAsides);
+  window.addEventListener("load", positionAsides);
 </script>

@@ -48,6 +48,11 @@ module.exports = {
           DEFAULT: "rgb(var(--color-tag) / <alpha-value>)",
           hover: "rgb(var(--color-tag-hover) / <alpha-value>)",
         },
+        aside: {
+          bg: "rgb(var(--color-aside-bg) / <alpha-value>)",
+          border: "rgb(var(--color-aside-border) / <alpha-value>)",
+          marker: "rgb(var(--color-aside-marker) / <alpha-value>)",
+        },
       },
     },
   },

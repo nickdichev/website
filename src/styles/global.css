@@ -121,3 +121,164 @@ span[data-highlighted-line]::before {
 span[data-highlighted-line] {
   @apply bg-accent-light/20;
 }
+
+/* Aside Design Tokens */
+:root {
+  --color-aside-bg: var(--color-warm-100);
+  --color-aside-border: var(--color-warm-300);
+  --color-aside-marker: var(--color-primary-light);
+}
+
+.dark {
+  --color-aside-bg: var(--color-warm-850);
+  --color-aside-border: var(--color-warm-600);
+  --color-aside-marker: var(--color-primary-dark);
+}
+
+/* Aside Container - Force inline */
+.aside-container {
+  display: inline !important;
+}
+
+/* Aside Marker Wrapper - Keeps marker inline with text */
+.aside-marker-wrapper {
+  display: inline;
+}
+
+/* Aside Marker - Inline-flex for icon alignment, no border */
+.aside-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  background-color: rgb(var(--color-aside-marker) / 0.15);
+  color: rgb(var(--color-aside-marker));
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  margin: 0 0.125rem;
+}
+
+.aside-marker:hover {
+  background-color: rgb(var(--color-aside-marker) / 0.25);
+}
+
+.aside-marker-number {
+  line-height: 1;
+}
+
+/* Aside Content - Hidden on mobile by default */
+.aside-content {
+  display: none;
+}
+
+/* Aside Content - Expanded state on mobile */
+.aside-content-expanded {
+  display: block;
+  background-color: rgb(var(--color-aside-bg));
+  border-left: 3px solid rgb(var(--color-aside-border));
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.aside-content-inner {
+  display: block;
+}
+
+.aside-content-number {
+  font-weight: 700;
+  color: rgb(var(--color-aside-marker));
+  margin-right: 0.25rem;
+}
+
+/* Desktop: Position asides in right margin */
+@media (min-width: 1024px) {
+  .article-with-asides {
+    position: relative;
+  }
+
+  .aside-marker-wrapper {
+    display: inline;
+  }
+
+  .aside-marker {
+    cursor: pointer;
+  }
+
+  /* Show content absolutely positioned on desktop */
+  .aside-content {
+    display: block;
+    position: absolute;
+    left: calc(100% + 2.5rem);
+    width: 200px;
+    background-color: rgb(var(--color-aside-bg));
+    border-left: 2px solid rgb(var(--color-aside-border));
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    border-radius: 0 0.25rem 0.25rem 0;
+    z-index: 30;
+  }
+
+  /* Reset expanded styles on desktop */
+  .aside-content-expanded {
+    margin: 0;
+  }
+}
+
+/* Code-linked asides (asides with id, linked from code blocks) */
+.aside-code-linked {
+  display: block !important;
+}
+
+/* On mobile, code-linked asides show their content directly */
+.aside-content-code-linked {
+  display: block;
+  background-color: rgb(var(--color-aside-bg));
+  border-left: 3px solid rgb(var(--color-aside-border));
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+@media (min-width: 1024px) {
+  /* On desktop, code-linked asides are positioned by JS based on code marker location */
+  .aside-content-code-linked {
+    margin: 0;
+  }
+}
+
+/* Code Aside Markers */
+.code-aside-marker {
+  color: rgb(var(--color-aside-marker));
+  background-color: rgb(var(--color-aside-marker) / 0.15);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.15s;
+}
+
+.code-aside-marker:hover {
+  background-color: rgb(var(--color-aside-marker) / 0.3);
+}
+
+/* Highlight animation for aside when targeted from code */
+@keyframes aside-highlight {
+  0% {
+    background-color: rgb(var(--color-aside-marker) / 0.3);
+  }
+  100% {
+    background-color: rgb(var(--color-aside-bg));
+  }
+}
+
+.aside-content.aside-highlighted {
+  animation: aside-highlight 1.5s ease-out;
+}

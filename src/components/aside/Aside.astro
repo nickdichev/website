@@ -1,0 +1,13 @@
+---
+import AsideContent from "./AsideContent";
+
+interface Props {
+  id?: string;
+}
+
+const { id } = Astro.props;
+---
+
+<AsideContent client:idle asideId={id}>
+  <slot />
+</AsideContent>
