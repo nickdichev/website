@@ -122,6 +122,13 @@ span[data-highlighted-line] {
   @apply bg-accent-light/20;
 }
 
+/* Blog post body background for readability over lava lamp */
+.blog-post-body .article-with-asides {
+  background-color: rgb(var(--color-background) / 0.80);
+  border-radius: 0.75rem;
+  padding: 2rem;
+}
+
 /* Aside Design Tokens */
 :root {
   --color-aside-bg: var(--color-warm-100);
