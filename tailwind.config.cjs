@@ -10,6 +10,14 @@ module.exports = {
         sans: ["Helvetica Neue", ...defaultTheme.fontFamily.sans],
         righteous: ["Righteous", "Helvetica Neue", ...defaultTheme.fontFamily.sans],
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            "code::before": { content: "none" },
+            "code::after": { content: "none" },
+          },
+        },
+      },
       colors: {
         background: "rgb(var(--color-background) / <alpha-value>)",
         surface: {
