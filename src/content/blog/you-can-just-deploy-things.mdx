@@ -1,0 +1,292 @@
+---
+title: "You Can Just Deploy Things"
+description: "How Nix makes it trivially easy to deploy software on your home server."
+featured: true
+draft: true
+pubDate: "Mar 02 2026"
+tags:
+  - nix
+  - nixos
+  - homelab
+---
+
+import Aside from "../../components/aside/Aside.astro";
+
+Do you understand what Nix does? Maybe you heard it is a package manager. Didn't one of your neckbeard coworkers grumble about how they use it as an operating system? "I thought it builds software" you might say.
+
+The truth is it's all of those things, and that's pretty confusing. In my opinion, to understand Nix you have to work your way through understanding how Nix (the language), nixpkgs (the package manager), and NixOS (the operating system) are _all_ Nix. <Aside>I used to read this in other peoples blog posts and I never really understood what it meant...</Aside>
+
+![A trinity diagram showing the relationship between Nix, nixpkgs, NixOS, and the Nix DSL](/blog/you-can-just-deploy-things/cb247e197294b62a.png)
+
+When I was first playing around with Nix (the package manager and the language) I couldn't grasp how the tool I was using to create development shells for my software projects could also be used to deploy software I was developing! Well, the missing piece was Nix (the operating system). <Aside>You can evaluate Nix code in a Dockerfile to produce a more traditional build artifact, but that's a [different blog post](https://mitchellh.com/writing/nix-with-dockerfiles).</Aside>
+
+When you put together all the pieces of the Nix puzzle it makes you feel like you have a superpower when it comes to your relationship with software.
+
+You can just deploy things.
+
+In my [previous post](https://nickdichev.com/blog/state-of-the-homelab-early-2026/) I mentioned the services I've deployed on my home server `liveoak`. One thing thats been really nice about running NixOS on the server has been the ease of which I can try out software. There's a lot of people using Nix (the operating system) who do the hard(?) work of writing Nix (the language) you need to deploy software with Nix (the package manager).
+
+What does this actually look like? Well, even if you don't know Nix (the language) I hope if you squint at the code samples hard enough and read my annotations you'll see why I think this is so cool.
+
+# Let's Deploy a RSS Reader
+
+After a couple of years of hanging out on the orange website I've collected a handful of technical blogs I like. Instead of waiting for their posts to hopefully end up near the top of the feed for me to see, I need a way to subscribe to their RSS feeds directly. Since the whole idea of my home server is to... host software for my use... let's see how we can deploy a RSS reader with Nix.
+
+I've heard of one called [miniflux](https://miniflux.app), let's see if its available as a NixOS service:
+
+![NixOS options search results for services.miniflux showing 10 available options](/blog/you-can-just-deploy-things/miniflux-nixos-options.jpg)
+
+This is the perfect scenario, getting this thing running should be as easy as `services.miniflux.enable = true;`. Getting it configured should be as easy as `services.miniflux.config = { a bunch of config key/value pairs}`. Easy peasy, right? Right.
+
+Here's what that looks like in Nix (the language):
+
+```nix
+_: {
+  _class = "clan.service";
+
+  roles.server = {
+    interface =
+      { lib, ... }:
+      {
+        options = {
+          port = lib.mkOption {
+            type = lib.types.port;
+            default = 8000;
+            description = "Port for the Miniflux service.";
+          };
+        };
+      };
+
+    perInstance =
+      { settings, ... }:
+      {
+        nixosModule =
+          { pkgs, ... }:
+          {
+            imports = [
+              ../../modules/tailscale-serve.nix
+            ];
+
+            services.miniflux = {
+              enable = true;
+
+              config = {
+                LISTEN_ADDR = "127.0.0.1:${toString settings.port}";
+                AUTH_PROXY_HEADER = "Tailscale-User-Login";
+                AUTH_PROXY_USER_CREATION = 1;
+                CREATE_ADMIN = 0;
+                TRUSTED_REVERSE_PROXY_NETWORKS = "100.64.0.0/10";
+              };
+              adminCredentialsFile = pkgs.writeText "dummy" "DUMMY=1";
+            };
+
+            services.tailscaleServe.miniflux = {
+              enable = true;
+              serviceName = "rss";
+              port = settings.port;
+            };
+          };
+      };
+  };
+}
+```
+
+Apply that configuration, and boom -- miniflux is running on the server accessible on my Tailscale network at `https://rss.mytailnet.ts.net`.
+
+Pretty sweet. But what just happened? Let's take a look at what's going on inside this `services.miniflux` thing we `.enable`'ed:
+
+```nix
+config = mkIf cfg.enable {
+	services.postgresql = lib.mkIf cfg.createDatabaseLocally {
+		enable = true;
+		ensureUsers = [
+			{
+				name = "miniflux";
+				ensureDBOwnership = true;
+			}
+		];
+		ensureDatabases = [ "miniflux" ];
+	};
+
+	systemd.services.miniflux-dbsetup = lib.mkIf cfg.createDatabaseLocally {
+		description = "Miniflux database setup";
+		requires = [ "postgresql.target" ];
+		after = [
+			"network.target"
+			"postgresql.target"
+		];
+		serviceConfig = {
+			Type = "oneshot";
+			User = config.services.postgresql.superUser;
+			ExecStart = preStart;
+		};
+	};
+
+	systemd.services.miniflux = {
+		description = "Miniflux service";
+		wantedBy = [ "multi-user.target" ];
+		requires = lib.optional cfg.createDatabaseLocally "miniflux-dbsetup.service";
+		after = [
+			"network.target"
+		]
+		++ lib.optionals cfg.createDatabaseLocally [
+			"postgresql.target"
+			"miniflux-dbsetup.service"
+		];
+
+		serviceConfig = {
+			Type = "notify";
+			ExecStart = lib.getExe cfg.package;
+			User = "miniflux";
+		};
+
+		environment = lib.mapAttrs (_: toString) (lib.filterAttrs (_: v: v != null) cfg.config);
+	};
+```
+
+([source: nixpkgs/nixos/modules/services/web-apps/miniflux.nix](https://github.com/NixOS/nixpkgs/blob/nixos-25.11/nixos/modules/services/web-apps/miniflux.nix#L117-L227))
+
+So, just by `.enable = true;`'ing `services.miniflux` (and relying on some default behavior) we got a systemd unit wrapping the executable and a configured database. I didn't have to think about provisioning a database, creating a database user, or creating the database. Everything which needs to happen to take a piece of code and run it in "production" was done for me by opting in to `services.miniflux.enable`. If we didn't want the database, we could have explicitly passed `services.miniflux.createDatabaseLocally = false;`. That's pretty neat, huh?
+
+# Lets Deploy Some (-one elses) Code
+
+One thing I think that's fascinating about Nix is that you can just run and deploy code. Need to resize your VMs disk partition? Run `nix shell nixpkgs#cloud-utils` and `growpart` is available on your `PATH`.
+
+Found a cool project on Github you want to try out? Why not, let's deploy that to the server too.
+
+I have a habit of opening a bunch of tabs that "I'll look at later". I wanted a proper home for these links that I would eventually look at. I found [feedlynx](https://github.com/wezm/feedlynx) which can create an RSS feed for links it gets sent over an HTTP API.
+
+Sounds great, this time though we didn't get so lucky -- no one has written a Nix (the operating system) module for us to use.
+
+{/* TODO: insert image of empty feedlynx NixOS options search */}
+
+Oh and actually, its not packaged in Nix (the package manager) either.
+
+{/* TODO: insert image of empty feedlynx package search */}
+
+Not a problem at all. If we take a look at the Github repo we can see that the project is written in Rust. Nix (the package manager) has a lot of packages written in Rust in it. Like most software projects, the engineers working on it have found high level abstractions to make common patterns easier for other developers.
+
+Lets take a look at how we can use `pkgs.rustPlatform.buildRustPackage` and `pkgs.fetchFromGithub` to deploy someone's project from Github (I've annotated the interesting bits):
+
+```nix
+_: {
+  _class = "clan.service";
+
+  roles.server = {
+    interface =
+      { lib, ... }:
+      {
+        options = {
+          port = lib.mkOption {
+            type = lib.types.port;
+            default = 8001;
+            description = "Port for the Feedlynx service.";
+          };
+
+          dataDir = lib.mkOption {
+            type = lib.types.path;
+            default = "/var/lib/feedlynx";
+            description = "Directory to store the feed file.";
+          };
+        };
+      };
+
+    perInstance =
+      { instanceName, settings, ... }:
+      {
+        nixosModule =
+          {
+            config,
+            pkgs,
+            lib,
+            ...
+          }:
+          let
+            generatorName = "feedlynx-${instanceName}";
+
+            feedlynx = pkgs.rustPlatform.buildRustPackage {
+              pname = "feedlynx";
+              version = "0.4.0";
+
+              src = pkgs.fetchFromGitHub {
+                owner = "wezm";
+                repo = "feedlynx";
+                rev = "1f94cc5ba4123829b8cce05ab4c229fbca8c7350";
+                hash = "sha256-w+ZSFw1DGAb4OQT45/BpVo4AoxKZnwnX/6oZZ8gb9Z0=";
+              };
+
+              cargoHash = "sha256-ZiMWXtDVt/Je8pLyqWCN8SHXG3KzbBHxeacqUBVzWw0=";
+            };
+          in
+          {
+            imports = [
+              ../../modules/tailscale-serve.nix
+            ];
+
+            clan.core.vars.generators.${generatorName} = {
+              share = false;
+
+              files.environmentFile = {
+                mode = "0400";
+              };
+
+              runtimeInputs = [ pkgs.openssl ];
+
+              script = ''
+                PRIVATE_TOKEN=$(openssl rand -hex 32)
+                FEED_TOKEN=$(openssl rand -hex 32)
+                cat > $out/environmentFile <<EOF
+                FEEDLYNX_PRIVATE_TOKEN=$PRIVATE_TOKEN
+                FEEDLYNX_FEED_TOKEN=$FEED_TOKEN
+                EOF
+              '';
+            };
+
+            users.users.feedlynx = {
+              isSystemUser = true;
+              group = "feedlynx";
+              home = settings.dataDir;
+              createHome = true;
+            };
+
+            users.groups.feedlynx = { };
+
+            systemd.services.feedlynx = {
+              description = "Feedlynx RSS link collector";
+              after = [ "network.target" ];
+              wantedBy = [ "multi-user.target" ];
+
+              environment = {
+                FEEDLYNX_ADDRESS = "127.0.0.1";
+                FEEDLYNX_PORT = toString settings.port;
+              };
+
+              serviceConfig = {
+                Type = "simple";
+                User = "feedlynx";
+                Group = "feedlynx";
+                EnvironmentFile = config.clan.core.vars.generators.${generatorName}.files.environmentFile.path;
+                ExecStart = "${feedlynx}/bin/feedlynx ${settings.dataDir}/feed.xml";
+                Restart = "on-failure";
+                RestartSec = 5;
+              };
+            };
+
+            services.tailscaleServe.feedlynx = {
+              enable = true;
+              serviceName = "feedlynx";
+              port = settings.port;
+            };
+          };
+      };
+  };
+}
+```
+
+Evaluate that thing and I've got Feedlynx running on my server. I didn't have to build a Dockerfile and somehow get that to my server. I didn't have to muck about with generating secrets for the service. I declared some Nix for how I want my service to be setup and Nix figured out how to make that happen for me.
+
+# You Can Just Deploy Things
+
+The ease at which you can try out new software with Nix is really awesome. Read about a service which is somewhat popular? Odds are there's already a NixOS module you can use. Didn't get so lucky with that? Package it yourself, its easy. (in general... obviously it depends on the package and its dependencies).
+
+I've been having a lot of fun trying out new software. That could be a small CLI tool I run from nixpkgs or directly from Github or a SSO solution for accessing my Tailscale (via [authentik-nix](https://github.com/nix-community/authentik-nix)).
