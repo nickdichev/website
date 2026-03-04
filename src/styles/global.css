@@ -122,13 +122,6 @@ span[data-highlighted-line] {
   @apply bg-accent-light/20;
 }
 
-/* Blog post body background for readability over lava lamp */
-.blog-post-body .article-with-asides {
-  background-color: rgb(var(--color-background) / 0.80);
-  border-radius: 0.75rem;
-  padding: 2rem;
-}
-
 /* Aside Design Tokens */
 :root {
   --color-aside-bg: var(--color-warm-100);
@@ -204,7 +197,7 @@ span[data-highlighted-line] {
 }
 
 /* Desktop: Position asides in right margin */
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .article-with-asides {
     position: relative;
   }
@@ -221,7 +214,7 @@ span[data-highlighted-line] {
   .aside-content {
     display: block;
     position: absolute;
-    left: calc(100% + 2.5rem);
+    left: calc(100% + 1.5rem);
     width: 200px;
     background-color: rgb(var(--color-aside-bg));
     border-left: 2px solid rgb(var(--color-aside-border));
@@ -254,7 +247,7 @@ span[data-highlighted-line] {
   border-radius: 0 0.25rem 0.25rem 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   /* On desktop, code-linked asides are positioned by JS based on code marker location */
   .aside-content-code-linked {
     margin: 0;

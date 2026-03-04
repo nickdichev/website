@@ -40,55 +40,12 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
 
 <BaseLayout title={title} description={description} postMeta={{ pubDate, tags }}>
   <div
-    class="prose prose-slate max-w-none prose-headings:scroll-my-20 prose-a:underline-offset-2 prose-a:decoration-accent prose-img:rounded-lg dark:prose-invert blog-post-body"
+    class="prose prose-slate max-w-none prose-headings:scroll-my-20 prose-a:underline-offset-2 prose-a:decoration-accent prose-img:rounded-lg dark:prose-invert"
   >
-    <h1>{title}</h1>
-    <div class="font-semibold text-xs uppercase space-y-2">
-      <div class="flex flex-wrap items-center space-x-1">
-        <span>
-          Published on <FormattedDate date={pubDate} />
-        </span>
-        {
-          updatedDate && (
-            <>
-              <span>{"•"}</span>
-              <span>
-                Updated on <FormattedDate date={updatedDate} />
-              </span>
-            </>
-          )
-        }
-        <span>{"•"}</span>
-        <span>{readingTime}</span>
-      </div>
-      <div class="flex space-x-2 items-center">
-        {
-          tags.map((tag) => (
-            <a
-              href={`/tags/${tag.slice(1)}`}
-              class="no-underline bg-tag hover:bg-tag-hover p-1 px-4 rounded-full"
-            >
-              {tag}
-            </a>
-          ))
-        }
-      </div>
-    </div>
-    <div class="not-prose">
-      {cover && coverAlt && <Image class="my-10 mb-1 rounded-lg" src={cover} alt={coverAlt} />}
-    </div>
-    <div class="md:flex space-x-10">
-      <div class="w-full">
-        <div class="not-prose my-10">
-          {series && <SeriesCard series={series} order={orderInSeries} />}
-        </div>
-        <article class="article-with-asides">
-          <slot />
-        </article>
-      </div>
+    <div class="lg:flex lg:gap-6 xl:grid xl:grid-cols-[12rem_1fr_14rem] xl:gap-6">
       {
         headings.length > 0 && (
-          <nav class="hidden text-sm space-y-2 mt-9 lg:block lg:w-4/12 h-screen sticky top-20 z-40">
+          <nav class="hidden text-sm space-y-2 lg:block lg:w-48 xl:w-auto shrink-0 h-screen sticky top-20 z-40">
             <span class="font-black text-text-heading uppercase">On This Page</span>
             <TableOfContent headings={headings} />
             <div class="border-border border-b-[1px]" />
@@ -98,6 +55,49 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
           </nav>
         )
       }
+      <div class="w-full min-w-0 xl:col-start-2">
+        <h1>{title}</h1>
+        <div class="font-semibold text-xs uppercase space-y-2">
+          <div class="flex flex-wrap items-center space-x-1">
+            <span>
+              Published on <FormattedDate date={pubDate} />
+            </span>
+            {
+              updatedDate && (
+                <>
+                  <span>{"•"}</span>
+                  <span>
+                    Updated on <FormattedDate date={updatedDate} />
+                  </span>
+                </>
+              )
+            }
+            <span>{"•"}</span>
+            <span>{readingTime}</span>
+          </div>
+          <div class="flex space-x-2 items-center">
+            {
+              tags.map((tag) => (
+                <a
+                  href={`/tags/${tag.slice(1)}`}
+                  class="no-underline bg-tag hover:bg-tag-hover p-1 px-4 rounded-full"
+                >
+                  {tag}
+                </a>
+              ))
+            }
+          </div>
+        </div>
+        <div class="not-prose">
+          {cover && coverAlt && <Image class="my-10 mb-1 rounded-lg" src={cover} alt={coverAlt} />}
+        </div>
+        <div class="not-prose my-10">
+          {series && <SeriesCard series={series} order={orderInSeries} />}
+        </div>
+        <article class="article-with-asides">
+          <slot />
+        </article>
+      </div>
     </div>
   </div>
 </BaseLayout>
@@ -224,7 +224,7 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
     const article = document.querySelector(".article-with-asides");
     if (!article) return;
 
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    const isDesktop = window.matchMedia("(min-width: 1280px)").matches;
     if (!isDesktop) return;
 
     const asides = article.querySelectorAll(".aside-container");

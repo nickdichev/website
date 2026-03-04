@@ -17,7 +17,7 @@ export default function AsideContent({
   const isCodeLinked = !!asideId;
 
   const handleMarkerClick = () => {
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    const isDesktop = window.matchMedia("(min-width: 1280px)").matches;
     if (isDesktop) {
       // On desktop, scroll to and highlight the aside content
       const content = containerRef.current?.querySelector("[data-aside-content]") as HTMLElement;
