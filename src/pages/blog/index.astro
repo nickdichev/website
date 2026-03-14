@@ -5,7 +5,7 @@ import PostsList from "../../components/PostsList.astro";
 
 const posts = (await getCollection("blog"))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .filter((post) => !post.data.planned && !post.data.draft);
+  .filter((post) => !post.data.planned && (import.meta.env.DEV || !post.data.draft));
 ---
 
 <BaseLayout title="All posts">

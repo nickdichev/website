@@ -13,10 +13,10 @@ const posts = await getCollection("blog");
 
 const sortedPosts = posts
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .filter((post) => !post.data.planned && !post.data.draft)
+  .filter((post) => !post.data.planned && (import.meta.env.DEV || !post.data.draft))
   .slice(0, 3);
 
-const featuredPosts = posts.filter((post) => post.data.featured && !post.data.draft);
+const featuredPosts = posts.filter((post) => post.data.featured && (import.meta.env.DEV || !post.data.draft));
 
 const featuredSeries = (await getCollection("series")).filter((s) => s.data.featured);
 ---

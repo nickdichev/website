@@ -15,7 +15,23 @@ export default defineConfig({
   markdown: {
     extendDefaultPlugins: true,
     syntaxHighlight: false,
-    rehypePlugins: [rehypePrettyCode],
+    rehypePlugins: [
+      [
+        rehypePrettyCode,
+        {
+          transformers: [
+            {
+              name: "aside-reset",
+              pre(node) {
+                if (this.options.meta?.__raw?.includes("aside-reset")) {
+                  node.properties["data-aside-reset"] = "";
+                }
+              },
+            },
+          ],
+        },
+      ],
+    ],
     remarkPlugins: [remarkReadingTime],
   },
   vite: {

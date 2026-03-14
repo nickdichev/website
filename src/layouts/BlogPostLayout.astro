@@ -168,6 +168,12 @@ const series = (await getCollection("series")).find((s) => s.data.id === seriesI
     const codeBlocks = document.querySelectorAll("figure[data-rehype-pretty-code-figure] code");
 
     codeBlocks.forEach((code) => {
+      // Reset counter if the code fence has `aside-reset` in its meta
+      const pre = code.closest("pre");
+      if (pre?.hasAttribute("data-aside-reset")) {
+        markerCount = 0;
+      }
+
       // Walk every line span
       const lines = code.querySelectorAll("span[data-line]");
       lines.forEach((line) => {
