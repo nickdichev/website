@@ -9,13 +9,17 @@ tags:
   - homelab
 ---
 
+import { Image } from "astro:assets";
 import Aside from "../../components/aside/Aside.astro";
+import nixTrinity from "../../assets/blog/you-can-just-deploy-things/cb247e197294b62a.png";
+import minifluxOptions from "../../assets/blog/you-can-just-deploy-things/miniflux-nixos-options.jpg";
+import feedlynxOptions from "../../assets/blog/you-can-just-deploy-things/feedlynx-nixos-options-empty.jpg";
 
 Psst, hey kid -- ever heard of Nix? Maybe you heard it's a package manager. Hasn't one of your neckbeard coworkers grumbled about how they use it as an operating system? "I thought it builds software" you might say.
 
 The truth is it's all of those things and that can be pretty confusing. I think to understand Nix you have to work your way through understanding how Nix (the language), nixpkgs (the package manager), and NixOS (the operating system) _are all Nix_. <Aside>I used to read this in other blog posts and I never really understood what it meant...</Aside>
 
-![A trinity diagram showing the relationship between Nix, nixpkgs, NixOS, and the Nix DSL](/blog/you-can-just-deploy-things/cb247e197294b62a.png)
+<Image src={nixTrinity} alt="A trinity diagram showing the relationship between Nix, nixpkgs, NixOS, and the Nix DSL" class="rounded-lg" />
 
 When I started playing around with Nix (the package manager and the language) I couldn't grasp how the tool I was using to create development shells for my software projects could also be used to deploy the software that was being developed! Well, the missing piece was Nix (the operating system). <Aside>You can evaluate Nix code in a Dockerfile to produce a more traditional build artifact, but that's a [different blog post](https://mitchellh.com/writing/nix-with-dockerfiles).</Aside>
 
@@ -33,7 +37,7 @@ After a couple of years of hanging out on the orange website I've collected a ha
 
 I've heard of one called [miniflux](https://miniflux.app), let's see if it's available as a NixOS service:
 
-![NixOS options search results for services.miniflux showing 10 available options](/blog/you-can-just-deploy-things/miniflux-nixos-options.jpg)
+<Image src={minifluxOptions} alt="NixOS options search results for services.miniflux showing 10 available options" class="rounded-lg" />
 
 Perfect! Getting this thing running should be as easy as `services.miniflux.enable = true;`. Getting it configured should be as easy as `services.miniflux.config = { a bunch of key/value pairs }`. Easy peasy, right? Right.
 
@@ -163,7 +167,7 @@ I have a habit of opening a bunch of tabs that "I'll look at later". I wanted a 
 
 Sounds great, this time though we didn't get so lucky -- no one has written a Nix (the operating system) module for us to use.
 
-![NixOS options search for services.feedlynx showing no options found](/blog/you-can-just-deploy-things/feedlynx-nixos-options-empty.jpg)
+<Image src={feedlynxOptions} alt="NixOS options search for services.feedlynx showing no options found" class="rounded-lg" />
 
 Oh actually -- it's not packaged in Nix (the package manager) either.
 
