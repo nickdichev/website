@@ -13,7 +13,7 @@ export async function GET(context) {
     stylesheet: "/rss/styles.xsl",
     items: posts.map((post) => ({
       ...post.data,
-      link: `/blog/${post.slug}/`,
+      link: `/blog/${post.id}/`,
     })),
   });
 }

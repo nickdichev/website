@@ -2,6 +2,7 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
+import { unified } from "@astrojs/markdown-remark";
 import rehypePrettyCode from "rehype-pretty-code";
 import remarkReadingTime from "./src/plugins/remark-reading-time.mjs";
 import preact from "@astrojs/preact";
@@ -15,24 +16,26 @@ export default defineConfig({
   markdown: {
     extendDefaultPlugins: true,
     syntaxHighlight: false,
-    rehypePlugins: [
-      [
-        rehypePrettyCode,
-        {
-          transformers: [
-            {
-              name: "aside-reset",
-              pre(node) {
-                if (this.options.meta?.__raw?.includes("aside-reset")) {
-                  node.properties["data-aside-reset"] = "";
-                }
+    processor: unified({
+      rehypePlugins: [
+        [
+          rehypePrettyCode,
+          {
+            transformers: [
+              {
+                name: "aside-reset",
+                pre(node) {
+                  if (this.options.meta?.__raw?.includes("aside-reset")) {
+                    node.properties["data-aside-reset"] = "";
+                  }
+                },
               },
-            },
-          ],
-        },
+            ],
+          },
+        ],
       ],
-    ],
-    remarkPlugins: [remarkReadingTime],
+      remarkPlugins: [remarkReadingTime],
+    }),
   },
   vite: {
     plugins: [

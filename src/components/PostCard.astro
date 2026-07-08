@@ -10,7 +10,7 @@ const { post } = Astro.props;
 ---
 
 <a
-  href={!post.data.planned ? `/blog/${post.slug}` : null}
+  href={!post.data.planned ? `/blog/${post.id}` : null}
   class={`space-y-2 flex flex-col items-start rounded-lg p-5 bg-surface hover:bg-surface-hover`}
 >
   <div class="space-y-1">
